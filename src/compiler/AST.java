@@ -172,12 +172,18 @@ public class AST {
 	}
 
 	public static class GreaterEqualNode extends TypeNode {
+		final Node left;
+		final Node right;
+		GreaterEqualNode(Node l, Node r) {left = l; right = r;}
 
 		@Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
 
 	public static class LessEqualNode extends TypeNode {
+		final Node left;
+		final Node right;
+		LessEqualNode(Node l, Node r) {left = l; right = r;}
 
 		@Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
