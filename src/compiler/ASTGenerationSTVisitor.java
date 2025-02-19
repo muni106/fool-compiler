@@ -13,27 +13,27 @@ import static compiler.lib.FOOLlib.*;
 public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 
 	String indent;
-    public boolean print;
-	
-    ASTGenerationSTVisitor() {}    
-    ASTGenerationSTVisitor(boolean debug) { print=debug; }
-        
-    private void printVarAndProdName(ParserRuleContext ctx) {
-        String prefix="";        
-    	Class<?> ctxClass=ctx.getClass(), parentClass=ctxClass.getSuperclass();
-        if (!parentClass.equals(ParserRuleContext.class)) // parentClass is the var context (and not ctxClass itself)
-        	prefix=lowerizeFirstChar(extractCtxName(parentClass.getName()))+": production #";
-    	System.out.println(indent+prefix+lowerizeFirstChar(extractCtxName(ctxClass.getName())));                               	
-    }
-        
-    @Override
+	public boolean print;
+
+	ASTGenerationSTVisitor() {}
+	ASTGenerationSTVisitor(boolean debug) { print=debug; }
+
+	private void printVarAndProdName(ParserRuleContext ctx) {
+		String prefix="";
+		Class<?> ctxClass=ctx.getClass(), parentClass=ctxClass.getSuperclass();
+		if (!parentClass.equals(ParserRuleContext.class)) // parentClass is the var context (and not ctxClass itself)
+			prefix=lowerizeFirstChar(extractCtxName(parentClass.getName()))+": production #";
+		System.out.println(indent+prefix+lowerizeFirstChar(extractCtxName(ctxClass.getName())));
+	}
+
+	@Override
 	public Node visit(ParseTree t) {
-    	if (t==null) return null;
-        String temp=indent;
-        indent=(indent==null)?"":indent+"  ";
-        Node result = super.visit(t);
-        indent=temp;
-        return result; 
+		if (t==null) return null;
+		String temp=indent;
+		indent=(indent==null)?"":indent+"  ";
+		Node result = super.visit(t);
+		indent=temp;
+		return result;
 	}
 
 	@Override
@@ -57,27 +57,34 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	}
 
 	@Override
-	public Node visitTimes(TimesContext c) {
+	public Node visitTimesDiv(TimesDivContext c) {
 		if (print) printVarAndProdName(c);
-		Node n = new TimesNode(visit(c.exp(0)), visit(c.exp(1)));
-		n.setLine(c.TIMES().getSymbol().getLine());		// setLine added
-        return n;		
+		Node n;
+		//= new TimesNode(visit(c.exp(0)), visit(c.exp(1)));
+		if (c.TIMES() != null) {
+			n = new TimesNode(visit(c.exp(0)), visit(c.exp(1)));
+			n.setLine(c.TIMES().getSymbol().getLine());		// setLine added
+		} else {
+			n = new DivNode(visit(c.exp(0)), visit(c.exp(1)));
+			n.setLine(c.DIV().getSymbol().getLine());		// setLine added
+		}
+		return n;
 	}
 
 	@Override
-	public Node visitPlus(PlusContext c) {
+	public Node visitPlusMinus(PlusMinusContext c) {
 		if (print) printVarAndProdName(c);
 		Node n = new PlusNode(visit(c.exp(0)), visit(c.exp(1)));
-		n.setLine(c.PLUS().getSymbol().getLine());	
-        return n;		
+		n.setLine(c.PLUS().getSymbol().getLine());
+		return n;
 	}
 
 	@Override
-	public Node visitEq(EqContext c) {
+	public Node visitComp(CompContext c) {
 		if (print) printVarAndProdName(c);
 		Node n = new EqualNode(visit(c.exp(0)), visit(c.exp(1)));
-		n.setLine(c.EQ().getSymbol().getLine());		
-        return n;		
+		n.setLine(c.EQ().getSymbol().getLine());
+		return n;
 	}
 
 	@Override
@@ -88,14 +95,14 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 			n = new VarNode(c.ID().getText(), (TypeNode) visit(c.type()), visit(c.exp()));
 			n.setLine(c.VAR().getSymbol().getLine());
 		}
-        return n;
+		return n;
 	}
 
 	@Override
 	public Node visitFundec(FundecContext c) {
 		if (print) printVarAndProdName(c);
 		List<ParNode> parList = new ArrayList<>();
-		for (int i = 1; i < c.ID().size(); i++) { 
+		for (int i = 1; i < c.ID().size(); i++) {
 			ParNode p = new ParNode(c.ID(i).getText(),(TypeNode) visit(c.type(i)));
 			p.setLine(c.ID(i).getSymbol().getLine());
 			parList.add(p);
@@ -107,7 +114,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 			n = new FunNode(c.ID(0).getText(),(TypeNode)visit(c.type(0)),parList,decList,visit(c.exp()));
 			n.setLine(c.FUN().getSymbol().getLine());
 		}
-        return n;
+		return n;
 	}
 
 	@Override
@@ -148,8 +155,8 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		Node thenNode = visit(c.exp(1));
 		Node elseNode = visit(c.exp(2));
 		Node n = new IfNode(ifNode, thenNode, elseNode);
-		n.setLine(c.IF().getSymbol().getLine());			
-        return n;		
+		n.setLine(c.IF().getSymbol().getLine());
+		return n;
 	}
 
 	@Override
@@ -174,7 +181,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 
 	@Override
 	public Node visitCall(CallContext c) {
-		if (print) printVarAndProdName(c);		
+		if (print) printVarAndProdName(c);
 		List<Node> arglist = new ArrayList<>();
 		for (ExpContext arg : c.exp()) arglist.add(visit(arg));
 		Node n = new CallNode(c.ID().getText(), arglist);
