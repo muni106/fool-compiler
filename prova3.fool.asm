@@ -1,5 +1,5 @@
 push 6
-push 2
-mult
+push 3
+div
 print
 halt
