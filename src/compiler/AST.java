@@ -190,6 +190,8 @@ public class AST {
 	}
 
 	public static class NotNode extends TypeNode {
+		final Node right;
+		NotNode(Node r) {right = r;}
 
 		@Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
