@@ -61,7 +61,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 						"js"  // jump to to popped address
 				)
 		);
-		return "push "+funl;
+		return "push " + funl;
 	}
 
 	@Override

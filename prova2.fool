@@ -1,5 +1,5 @@
 let 
-  var x:int = 1+5;
+  var x:int = 5-1;
   var b:bool = true;
 in
   print (if (b) then { x+1 } else { x+2 });

@@ -1,7 +1,7 @@
 push 0
-push 1
 push 5
-add
+push 1
+sub
 push 1
 lfp
 push -3

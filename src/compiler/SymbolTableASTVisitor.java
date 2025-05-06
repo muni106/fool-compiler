@@ -13,7 +13,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	int stErrors=0;
 
 	SymbolTableASTVisitor() {}
-	SymbolTableASTVisitor(boolean debug) {super(debug);} // enables print for debugging
+	SymbolTableASTVisitor(boolean debug) {print = debug;} // enables print for debugging
 
 	private STentry stLookup(String id) {
 		int j = nestingLevel;
@@ -221,6 +221,38 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(IntNode n) {
 		if (print) printNode(n, n.val.toString());
+		return null;
+	}
+
+	//TODO obj
+
+	@Override
+	public Void visitNode(ClassNode n) {
+		return null;
+	}
+
+	@Override
+	public Void visitNode(FieldNode n) {
+		return null;
+	}
+
+	@Override
+	public Void visitNode(MethodNode n) {
+		return null;
+	}
+
+	@Override
+	public Void visitNode(ClassCallNode n) {
+		return null;
+	}
+
+	@Override
+	public Void visitNode(NewNode n) {
+		return null;
+	}
+
+	@Override
+	public Void visitNode(EmptyNode n) {
 		return null;
 	}
 }
