@@ -286,13 +286,16 @@ public class AST {
 	// expressions
 	public static class ClassCallNode extends Node {
 		final String classId;
-		final String method;
+		final String methodId;
 		final List<Node> argList;
 		int methodOffset;
+		STentry entry;
+		STentry methodEntry;
 
-        public ClassCallNode(String classId, String method, List<Node> argList) {
+
+		public ClassCallNode(String classId, String methodId, List<Node> argList) {
             this.classId = classId;
-            this.method = method;
+            this.methodId = methodId;
             this.argList = Collections.unmodifiableList(argList);
         }
 
@@ -302,11 +305,12 @@ public class AST {
 
 	public static class NewNode extends Node {
 		final String classId;
-		final List<Node> arglist;
+		final List<Node> argList;
+		STentry entry;
 
-        public NewNode(String classId, List<Node> arglist) {
+        public NewNode(String classId, List<Node> argList) {
             this.classId = classId;
-            this.arglist = Collections.unmodifiableList(arglist);
+            this.argList = Collections.unmodifiableList(argList);
         }
 
         @Override
@@ -319,14 +323,17 @@ public class AST {
 
 	// types
 	public static class ClassTypeNode extends TypeNode {
-		final String classId;
-		ClassTypeNode superType;  // reference to super class type (null if none)
-		List<TypeNode> allFields; // types of all fields (including inherited, overrides applied)
-		Map<String, ArrowTypeNode> allMethods; // types of all methods (including inherited)
-		Map<String, Integer> methodOffset;
+		final List<TypeNode> fields;
+		final List<ArrowTypeNode> methods;
 
-        public ClassTypeNode(String classId) {
-            this.classId = classId;
+		public ClassTypeNode() {
+			this.fields = new ArrayList<>();
+			this.methods = new ArrayList<>();
+		}
+
+        public ClassTypeNode(List<TypeNode> fields, List<ArrowTypeNode> methods) {
+            this.fields = fields;
+            this.methods = methods;
         }
 
         @Override

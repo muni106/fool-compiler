@@ -47,6 +47,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		if (print) printVarAndProdName(c);
 		List<DecNode> declist = new ArrayList<>();
 		for (DecContext dec : c.dec()) declist.add((DecNode) visit(dec));
+		for (CldecContext clDec : c.cldec()) declist.add((DecNode) visit(clDec));
 		return new ProgLetInNode(declist, visit(c.exp()));
 	}
 
@@ -226,43 +227,40 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		return n;
 	}
 
-	// TODO obj part
-
 	@Override
 	public Node visitCldec(CldecContext c) {
 		if (print) printVarAndProdName(c);
 		final List<MethodNode> methods = new ArrayList<>();
 		final List<FieldNode> fields = new ArrayList<>();
 		String superID = null;
-
-		for(int i = 1; i < c.ID().size(); i++) {
-			final String fieldId = c.ID(i).getText();
-			final TypeNode fieldType = (TypeNode) visit(c.type(i-1));
-			FieldNode f = new FieldNode(fieldId, fieldType);
-			f.setLine(c.ID(i).getSymbol().getLine());
-			fields.add(f);
-		}
-
-		for (MethdecContext dec : c.methdec()) {
-			MethodNode m = (MethodNode) visit(dec);
-			methods.add(m);
-		}
+		int startID = 1;
 
 		if (c.EXTENDS() != null) {
-			superID = c.EXTENDS().getText();
+			superID = c.ID(1).getText();
+			startID = 2;
+		}
+
+		for (int i = 2; i < c.ID().size(); i++) {
+			FieldNode field = new FieldNode(c.ID(i).getText(), (TypeNode) visit(c.type(i - startID)));
+			field.setLine(c.ID(i).getSymbol().getLine());
+			fields.add(field);
+		}
+
+		for (MethdecContext met : c.methdec()) {
+			methods.add((MethodNode) visit(met));
 		}
 
 		Node n = null;
-		if (!c.ID().isEmpty()) {
-			String classID = c.ID(0).getText();
-			n = new ClassNode(classID, superID, fields, methods);
-		}
 
+		if (c.ID().size() > 0) {
+			n = new ClassNode(c.ID(0).getText(), superID, fields, methods);
+			n.setLine(c.CLASS().getSymbol().getLine());
+		}
 		return n;
 	}
 
 	@Override
-	public Node visitMethdec(MethdecContext c) {
+	public MethodNode visitMethdec(MethdecContext c) {
 		if (print) printVarAndProdName(c);
 		List<ParNode> parList = new ArrayList<>();
 		for (int i = 1; i < c.ID().size(); i++) {
@@ -272,9 +270,9 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		}
 		List<DecNode> decList = new ArrayList<>();
 		for (DecContext dec : c.dec()) decList.add((DecNode) visit(dec));
-		Node n = null;
+		MethodNode n = null;
 		if (!c.ID().isEmpty()) { //non-incomplete ST
-			n = new FunNode( c.ID(0).getText(), (TypeNode) visit( c.type(0) ), parList, decList, visit( c.exp() ) );
+			n = new MethodNode( c.ID(0).getText(), (TypeNode) visit( c.type(0) ), parList, decList, visit( c.exp() ) );
 			n.setLine(c.FUN().getSymbol().getLine());
 		}
 		return n;
