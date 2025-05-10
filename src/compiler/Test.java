@@ -26,16 +26,16 @@ public class Test {
     	ASTGenerationSTVisitor visitor = new ASTGenerationSTVisitor(true); // use true to visualize the ST
     	Node ast = visitor.visit(st);
     	System.out.println("");
-//
-//    	System.out.println("Enriching AST via symbol table.");
-//    	SymbolTableASTVisitor symtableVisitor = new SymbolTableASTVisitor(true);
-//    	symtableVisitor.visit(ast);
-//    	System.out.println("You had " + symtableVisitor.stErrors+" symbol table errors.\n");
+
+    	System.out.println("Enriching AST via symbol table.");
+    	SymbolTableASTVisitor symtableVisitor = new SymbolTableASTVisitor(true);
+    	symtableVisitor.visit(ast);
+    	System.out.println("You had " + symtableVisitor.stErrors+" symbol table errors.\n");
 //
 //    	System.out.println("Visualizing Enriched AST.");
 //    	new PrintEASTVisitor().visit(ast);
 //    	System.out.println("");
-//
+
 //    	System.out.println("Checking Types.");
 //    	try {
 //    		TypeCheckEASTVisitor typeCheckVisitor = new TypeCheckEASTVisitor();

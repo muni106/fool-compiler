@@ -46,8 +46,8 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 	public Node visitLetInProg(LetInProgContext c) {
 		if (print) printVarAndProdName(c);
 		List<DecNode> declist = new ArrayList<>();
-		for (DecContext dec : c.dec()) declist.add((DecNode) visit(dec));
 		for (CldecContext clDec : c.cldec()) declist.add((DecNode) visit(clDec));
+		for (DecContext dec : c.dec()) declist.add((DecNode) visit(dec));
 		return new ProgLetInNode(declist, visit(c.exp()));
 	}
 
@@ -240,7 +240,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 			startID = 2;
 		}
 
-		for (int i = 2; i < c.ID().size(); i++) {
+		for (int i = startID; i < c.ID().size(); i++) {
 			FieldNode field = new FieldNode(c.ID(i).getText(), (TypeNode) visit(c.type(i - startID)));
 			field.setLine(c.ID(i).getSymbol().getLine());
 			fields.add(field);
@@ -264,7 +264,7 @@ public class ASTGenerationSTVisitor extends FOOLBaseVisitor<Node> {
 		if (print) printVarAndProdName(c);
 		List<ParNode> parList = new ArrayList<>();
 		for (int i = 1; i < c.ID().size(); i++) {
-			ParNode p = new ParNode(c.ID(i).getText(),(TypeNode) visit(c.type(i)));
+			ParNode p = new ParNode(c.ID(i).getText(), (TypeNode) visit(c.type(i)));
 			p.setLine(c.ID(i).getSymbol().getLine());
 			parList.add(p);
 		}

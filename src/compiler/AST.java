@@ -125,7 +125,7 @@ public class AST {
 	public static class IdNode extends Node {
 		final String id;
 		STentry entry;
-		int nl;
+		int nestingLevel;
 		IdNode(String i) {id = i;}
 
 		@Override
@@ -288,7 +288,7 @@ public class AST {
 		final String classId;
 		final String methodId;
 		final List<Node> argList;
-		int methodOffset;
+		int nestingLevel;
 		STentry entry;
 		STentry methodEntry;
 
@@ -323,15 +323,17 @@ public class AST {
 
 	// types
 	public static class ClassTypeNode extends TypeNode {
+		String id;
 		final List<TypeNode> fields;
 		final List<ArrowTypeNode> methods;
 
 		public ClassTypeNode() {
-			this.fields = new ArrayList<>();
+            this.fields = new ArrayList<>();
 			this.methods = new ArrayList<>();
 		}
 
-        public ClassTypeNode(List<TypeNode> fields, List<ArrowTypeNode> methods) {
+        public ClassTypeNode(String id, List<TypeNode> fields, List<ArrowTypeNode> methods) {
+            this.id = id;
             this.fields = fields;
             this.methods = methods;
         }
