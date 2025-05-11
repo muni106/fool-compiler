@@ -390,8 +390,6 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	@Override
 	public Void visitNode(NewNode n) {
 		if (print) printNode(n);
-
-
 		// Retrieve the STentry of the class ID from the class table
 		Map<String, STentry> virtualTable = classTable.get(n.classId);
 		if (virtualTable == null) {
@@ -399,9 +397,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			stErrors++;
 			return null;
 		}
-
 		// Retrieve the STentry from level 0 of the symbol table
-		STentry classEntry = symTable.get(0).get(n.classId);
+		STentry classEntry = symTable.getFirst().get(n.classId);
 		if (classEntry == null) {
 			System.out.println("Class " + n.classId + " at line " + n.getLine() + " not found in symbol table");
 			stErrors++;
