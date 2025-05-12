@@ -239,6 +239,11 @@ public class AST {
 		final String superId;
 		final List<FieldNode> fields;
 		final List<MethodNode> methods;
+		STentry superEntry;
+
+		public void setType(ClassTypeNode t) {
+			this.type = t;
+		}
 
         public ClassNode(String id, String superId, List<FieldNode> fields, List<MethodNode> methods) {
             this.id = id;
@@ -252,6 +257,7 @@ public class AST {
 	}
 	public static class FieldNode extends DecNode {
 		final String id;
+		int offset;
 
         public FieldNode(String id, TypeNode type) {
             this.id = id;
@@ -323,7 +329,6 @@ public class AST {
 
 	// types
 	public static class ClassTypeNode extends TypeNode {
-		String id;
 		final List<TypeNode> fields;
 		final List<ArrowTypeNode> methods;
 
@@ -332,8 +337,7 @@ public class AST {
 			this.methods = new ArrayList<>();
 		}
 
-        public ClassTypeNode(String id, List<TypeNode> fields, List<ArrowTypeNode> methods) {
-            this.id = id;
+        public ClassTypeNode(List<TypeNode> fields, List<ArrowTypeNode> methods) {
             this.fields = fields;
             this.methods = methods;
         }

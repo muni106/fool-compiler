@@ -23,12 +23,12 @@ public class Test {
     		parser.getNumberOfSyntaxErrors()+" syntax errors.\n");
 
     	System.out.println("Generating AST.");
-    	ASTGenerationSTVisitor visitor = new ASTGenerationSTVisitor(true); // use true to visualize the ST
+    	ASTGenerationSTVisitor visitor = new ASTGenerationSTVisitor(); // use true to visualize the ST
     	Node ast = visitor.visit(st);
     	System.out.println("");
 
     	System.out.println("Enriching AST via symbol table.");
-    	SymbolTableASTVisitor symtableVisitor = new SymbolTableASTVisitor(true);
+    	SymbolTableASTVisitor symtableVisitor = new SymbolTableASTVisitor();
     	symtableVisitor.visit(ast);
     	System.out.println("You had " + symtableVisitor.stErrors+" symbol table errors.\n");
 
@@ -36,19 +36,19 @@ public class Test {
     	new PrintEASTVisitor().visit(ast);
     	System.out.println("");
 
-//    	System.out.println("Checking Types.");
-//    	try {
-//    		TypeCheckEASTVisitor typeCheckVisitor = new TypeCheckEASTVisitor();
-//    		TypeNode mainType = typeCheckVisitor.visit(ast);
-//    		System.out.print("Type of main program expression is: ");
-//    		new PrintEASTVisitor().visit(mainType);
-//    	} catch (IncomplException e) {
-//    		System.out.println("Could not determine main program expression type due to errors detected before type checking.");
-//    	} catch (TypeException e) {
-//    		System.out.println("Type checking error in main program expression: "+e.text);
-//    	}
-//    	System.out.println("You had "+FOOLlib.typeErrors+" type checking errors.\n");
-//
+    	System.out.println("Checking Types.");
+    	try {
+    		TypeCheckEASTVisitor typeCheckVisitor = new TypeCheckEASTVisitor();
+    		TypeNode mainType = typeCheckVisitor.visit(ast);
+    		System.out.print("Type of main program expression is: ");
+    		new PrintEASTVisitor().visit(mainType);
+    	} catch (IncomplException e) {
+    		System.out.println("Could not determine main program expression type due to errors detected before type checking.");
+    	} catch (TypeException e) {
+    		System.out.println("Type checking error in main program expression: " + e.text);
+    	}
+    	System.out.println("You had " + FOOLlib.typeErrors + " type checking errors.\n");
+
 //    	int frontEndErrors = lexer.lexicalErrors+parser.getNumberOfSyntaxErrors()+symtableVisitor.stErrors+FOOLlib.typeErrors;
 //		System.out.println("You had a total of "+frontEndErrors+" front-end errors.\n");
 //

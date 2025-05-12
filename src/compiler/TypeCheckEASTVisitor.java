@@ -13,7 +13,7 @@ import static compiler.TypeRels.*;
 //visitSTentry(s) ritorna, per una STentry s, il tipo contenuto al suo interno
 public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException> {
 
-	TypeCheckEASTVisitor() { super(true); } // enables incomplete tree exceptions 
+	TypeCheckEASTVisitor() { super(true); } // enables incomplete tree exceptions
 	TypeCheckEASTVisitor(boolean debug) { super(true,debug); } // enables print for debugging
 
 	//checks that a type object is visitable (not incomplete) 
@@ -242,5 +242,114 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		if (print) printSTentry("type");
 		return ckvisit(entry.type); 
 	}
+
+	@Override
+	public TypeNode visitNode(MethodNode n) throws TypeException {
+		if (print) printNode(n,n.id);
+		for (Node dec : n.declist)
+			try {
+				visit(dec);
+			} catch (IncomplException e) {
+			} catch (TypeException e) {
+				System.out.println("Type checking error in a declaration: " + e.text);
+			}
+		if ( !isSubtype(visit(n.exp),ckvisit(n.retType)) )
+			throw new TypeException("Wrong return type for method " + n.id, n.getLine());
+		return null;
+	}
+
+	public TypeNode visitNode(ClassNode n) throws TypeException {
+		if (print) printNode(n, n.id);
+		if (n.superId != null) {
+			addTypeReference(n.id, n.superId);
+		}
+		for (MethodNode method : n.methods) {
+			try {
+				visit(method);
+			}catch (TypeException e) {
+				System.out.println("Type checking error in a method: " + e.text);
+			}
+		}
+
+		if (n.superEntry != null) {
+			ClassTypeNode classTypeNode = (ClassTypeNode) n.getType();
+			ClassTypeNode superType = (ClassTypeNode) n.superEntry.type;
+			for (FieldNode field : n.fields) {
+				int fieldPos = -field.offset - 1;
+				if (fieldPos < superType.fields.size() && !isSubtype(classTypeNode.fields.get(fieldPos), superType.fields.get(fieldPos))) {
+					throw new TypeException("Overridden fields need to be subtype of the super fields ", n.getLine());
+				}
+			}
+
+			for (MethodNode method : n.methods) {
+				int methodPos = method.offset;
+				if (methodPos < superType.methods.size() &&
+						!isSubtype(classTypeNode.methods.get(methodPos), superType.methods.get(methodPos))) {
+					throw new TypeException("Overridden methods need to be subtype of the super methods", n.getLine());
+				}
+			}
+		}
+
+		return null;
+
+	}
+
+	@Override
+	public TypeNode visitNode(EmptyNode n) throws TypeException {
+		if (print) printNode(n);
+		return new EmptyTypeNode();
+	}
+
+	@Override
+	public TypeNode visitNode(ClassTypeNode n) throws TypeException {
+		if (print) printNode(n);
+		return null;
+	}
+
+	@Override
+	public TypeNode visitNode(RefTypeNode n) throws TypeException {
+		if (print) printNode(n, n.className);
+		return null;
+	}
+
+	@Override
+	public TypeNode visitNode(EmptyTypeNode n) throws TypeException {
+		if (print) printNode(n);
+		return null;
+	}
+
+	@Override
+	public TypeNode visitNode(NewNode n) throws TypeException {
+		if (print) printNode(n, n.classId);
+		for (int i = 0; i < n.argList.size(); i++) {
+			TypeNode paramType = ((ClassTypeNode) n.entry.type).fields.get(i);
+			TypeNode actualParam = visit(n.argList.get(i));
+			if (!isSubtype(actualParam, paramType)) {
+				System.out.println("Incompatible type for argument " + i + " in class "
+						+ n.classId + " constructor at line " + n.getLine());
+			}
+		}
+		return new RefTypeNode(n.classId);
+	}
+
+	@Override
+	public TypeNode visitNode(ClassCallNode n) throws TypeException {
+		if (print) printNode(n, n.classId + "." + n.methodId);
+
+		TypeNode t = visit(n.methodEntry);
+		if ( !(t instanceof ArrowTypeNode) )
+			throw new TypeException("Invocation of a non-method "+n.methodId,n.getLine());
+		ArrowTypeNode at = (ArrowTypeNode) t;
+		if ( !(at.parlist.size() == n.argList.size()) )
+			throw new TypeException("Wrong number of parameters in the invocation of "+n.classId + "." + n.methodId,n.getLine());
+		for (int i = 0; i < n.argList.size(); i++)
+			if ( !(isSubtype(visit(n.argList.get(i)),at.parlist.get(i))) )
+				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.classId + "." + n.methodId,n.getLine());
+		return at.ret;
+	}
+
+
+
+
 
 }

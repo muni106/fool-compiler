@@ -247,6 +247,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 				stErrors++;
 				// virtualTable remains a new empty HashMap
 			} else if (superClassEntry.type instanceof ClassTypeNode) {
+				n.superEntry = superClassEntry;
 				Map<String, STentry> superVirtualTable = classTable.get(n.superId);
 				if (superVirtualTable != null) {
 					virtualTable = new HashMap<>(superVirtualTable); // Create a copy
@@ -277,7 +278,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 
 		for (FieldNode field : n.fields) {
 			if (fieldsName.contains(field.id)) {
-				System.out.println("Field " + field.id + " at line " + n.getLine() + " already declared");
+				System.out.println("Field " + field.id + " at line " + field.getLine() + " already declared");
 				stErrors++;
 			} else {
 				fieldsName.add(field.id);
@@ -285,11 +286,9 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			visit(field);
 			STentry fieldEntry = new STentry(nestingLevel, field.getType(), fieldsOffset--);
 			classTypeNode.fields.add(-fieldEntry.offset - 1, fieldEntry.type);
+			field.offset = fieldEntry.offset;
 			virtualTable.put(field.id, fieldEntry);
 		}
-
-
-
 
 		int prevOffset = decOffset;
 		decOffset = 0;
@@ -305,6 +304,8 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			ArrowTypeNode methodType = (ArrowTypeNode) symTable.get(nestingLevel).get(method.id).type;
 			classTypeNode.methods.add(method.offset, methodType);
 		}
+
+		n.setType(classTypeNode);
 		decOffset = prevOffset;
 		symTable.remove(nestingLevel--);
 		return null;
