@@ -241,7 +241,7 @@ public class AST {
 		final List<MethodNode> methods;
 		STentry superEntry;
 
-		public void setType(ClassTypeNode t) {
+		public void setType(TypeNode t) {
 			this.type = t;
 		}
 
@@ -276,6 +276,10 @@ public class AST {
 		// Fields for code generation:
 		String label;
 		int offset;
+
+		void setType(TypeNode t) {
+			this.type = t;
+		}
 
         public MethodNode(String id, TypeNode retType, List<ParNode> parlist, List<DecNode> declist, Node exp) {
             this.id = id;

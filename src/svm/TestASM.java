@@ -5,7 +5,7 @@ import org.antlr.v4.runtime.*;
 public class TestASM {
     public static void main(String[] args) throws Exception {
      
-        String fileName = "prova.asm";
+        String fileName = "bankloan2.fool.asm";
                 
         CharStream charsASM = CharStreams.fromFileName(fileName);
         SVMLexer lexerASM = new SVMLexer(charsASM);
