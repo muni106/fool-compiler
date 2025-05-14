@@ -228,38 +228,60 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	public Void visitNode(ClassNode n) {
 		if (print) printNode(n);
 		// new classTypeNode with empty methods and fields
-		Map<String, STentry> virtualTable = new HashMap<>();
 		ClassTypeNode classTypeNode = new ClassTypeNode();
-		final Set<String> fieldIdSet = new HashSet<>();
-		final Set<String> methodIdSet = new HashSet<>();
-
-		if (n.superId != null) {
-			STentry superClassEntry = symTable.getFirst().get(n.superId);
-			n.superEntry = superClassEntry;
-			classTypeNode = (ClassTypeNode) superClassEntry.type;
-		}
 		STentry entry = new STentry(0, classTypeNode, decOffset--);
-
+		Map<String, STentry> virtualTable = new HashMap<>();
+		int fieldsOffset = -1;
+		final Set<String> fieldsName = new HashSet<>();
+		final Set<String> methodsName = new HashSet<>();
 
 		if (symTable.getFirst().put(n.id, entry) != null) {
 			System.out.println("Class id " + n.id + " at line " + n.getLine() + " already declared");
 			stErrors++;
 		}
-		nestingLevel++;
-		if (n.superId != null) {
-			virtualTable.putAll(classTable.get(n.superId));
-		}
-		symTable.add(virtualTable);
-		classTable.put(n.id, virtualTable);
 
-		int fieldsOffset = -classTypeNode.fields.size() -1;
+		if (n.superId != null) {
+			STentry superClassEntry = symTable.getFirst().get(n.superId); // Look up superclass in global table
+			if (superClassEntry == null) {
+				System.out.println("Superclass id " + n.superId + " at line " + n.getLine() + " not declared.");
+				stErrors++;
+				// virtualTable remains a new empty HashMap
+			} else if (superClassEntry.type instanceof ClassTypeNode) {
+				n.superEntry = superClassEntry;
+				Map<String, STentry> superVirtualTable = classTable.get(n.superId);
+				if (superVirtualTable != null) {
+					virtualTable = new HashMap<>(superVirtualTable); // Create a copy
+					for (String id : superVirtualTable.keySet()) {
+						if (superVirtualTable.get(id).type instanceof ArrowTypeNode) {
+							classTypeNode.methods.add((ArrowTypeNode) superVirtualTable.get(id).type);
+						} else {
+							classTypeNode.fields.add( superVirtualTable.get(id).type);
+						}
+					}
+				} else {
+					// This indicates an earlier issue if a declared class doesn't have its VT in classTable
+					System.out.println("Internal error: Superclass " + n.superId + " virtual table not found in classTable at line " + n.getLine());
+					stErrors++;
+					// virtualTable remains a new empty HashMap
+				}
+			} else {
+				System.out.println("Superclass id " + n.superId + " at line " + n.getLine() + " is not a class type.");
+				stErrors++;
+				// virtualTable remains a new empty HashMap
+			}
+		}
+
+		classTable.put(n.id, virtualTable);
+		symTable.add(virtualTable);
+		nestingLevel++;
+
 
 		for (FieldNode field : n.fields) {
-			if (fieldIdSet.contains(field.id)) {
+			if (fieldsName.contains(field.id)) {
 				System.out.println("Field " + field.id + " at line " + field.getLine() + " already declared");
 				stErrors++;
 			} else {
-				fieldIdSet.add(field.id);
+				fieldsName.add(field.id);
 			}
 			visit(field);
 			STentry fieldEntry = new STentry(nestingLevel, field.getType(), fieldsOffset--);
@@ -269,14 +291,14 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		}
 
 		int prevOffset = decOffset;
-		decOffset = classTypeNode.methods.size();
+		decOffset = 0;
 
 		for (MethodNode method : n.methods) {
-			if (methodIdSet.contains(method.id)) {
+			if (methodsName.contains(method.id)) {
 				System.out.println("Method id " + method.id + " at line " + n.getLine() + " already declared");
 				stErrors++;
 			} else {
-				methodIdSet.add(method.id);
+				methodsName.add(method.id);
 			}
 			visit(method);
 			ArrowTypeNode methodType = (ArrowTypeNode) symTable.get(nestingLevel).get(method.id).type;
@@ -314,7 +336,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		int parOffset=1;
 		for ( ParNode par : n.parlist )
 			if ( hmn.put(par.id, new STentry(nestingLevel, par.getType(), parOffset++)) != null ) {
-				System.out.println("Par id " + par.id + " at line "+ n.getLine() + " already declared");
+				System.out.println("Par id " + par.id + " at line "+ n.getLine() +" already declared");
 				stErrors++;
 			}
 		for ( Node dec : n.declist ) visit( dec );
@@ -330,31 +352,39 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		if (print) printNode(n);
 
 		STentry entry = stLookup(n.classId);
-		if (entry != null) {
-			if (entry.type instanceof RefTypeNode) {
-				n.entry = entry;
-				n.nestingLevel = nestingLevel;
 
-				String classId = ((RefTypeNode) entry.type).className;
-				STentry methodEntry = classTable.get(classId).get(n.methodId);
-				if (methodEntry != null) {
-					n.methodEntry = methodEntry;
-				} else {
-					System.out.println("Method id " + n.classId + "." + n.methodId + " at line " + n.getLine() + " not declared");
-					stErrors++;
-				}
-			} else {
-				System.out.println("Reference id " + n.classId + " at line " + n.getLine() + " is not a RefType");
-				stErrors++;
-			}
-		} else {
-			System.out.println("Reference id " + n.classId + " at line " + n.getLine() + " not declared");
+		if (entry == null) {
+			System.out.println("Class id  " + n.classId + " at line " + n.getLine() + " not declared");
 			stErrors++;
+			return null;
+		} else {
+			n.entry = entry;
+			n.nestingLevel = nestingLevel;
 		}
 
-		for (Node arg : n.argList) {
-			visit(arg);
+		RefTypeNode ref;
+		if (!(entry.type instanceof RefTypeNode)) {
+			System.out.println(n.classId + " at line " + n.getLine() + " is not a class");
+			stErrors++;
+			return null;
 		}
+		ref = (RefTypeNode) entry.type;
+
+
+		Map<String, STentry> virtualTable = classTable.get(ref.className);
+
+
+
+		STentry methodEntry = virtualTable.get(n.methodId);
+		if (methodEntry == null) {
+			System.out.println("Method id " + n.classId + " at line " + n.getLine() + " not declared in class " + ref.className);
+			stErrors++;
+			return null;
+		}
+
+		n.methodEntry = methodEntry;
+
+		for (Node arg : n.argList) visit(arg);
 		return null;
 	}
 
