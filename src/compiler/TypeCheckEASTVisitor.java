@@ -289,9 +289,7 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 				}
 			}
 		}
-
 		return null;
-
 	}
 
 	@Override
@@ -325,8 +323,7 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			TypeNode paramType = ((ClassTypeNode) n.entry.type).fields.get(i);
 			TypeNode actualParam = visit(n.argList.get(i));
 			if (!isSubtype(actualParam, paramType)) {
-				System.out.println("Incompatible type for argument " + i + " in class "
-						+ n.classId + " constructor at line " + n.getLine());
+				System.out.println("Incompatible type for argument " + i + " in class " + n.classId + " constructor at line " + n.getLine());
 			}
 		}
 		return new RefTypeNode(n.classId);
@@ -344,7 +341,7 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			throw new TypeException("Wrong number of parameters in the invocation of "+n.classId + "." + n.methodId,n.getLine());
 		for (int i = 0; i < n.argList.size(); i++)
 			if ( !(isSubtype(visit(n.argList.get(i)),at.parlist.get(i))) )
-				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of "+n.classId + "." + n.methodId,n.getLine());
+				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of " + n.classId + "." + n.methodId,n.getLine());
 		return at.ret;
 	}
 

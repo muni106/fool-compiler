@@ -49,33 +49,33 @@ public class Test {
     	}
     	System.out.println("You had " + FOOLlib.typeErrors + " type checking errors.\n");
 
-//    	int frontEndErrors = lexer.lexicalErrors+parser.getNumberOfSyntaxErrors()+symtableVisitor.stErrors+FOOLlib.typeErrors;
-//		System.out.println("You had a total of "+frontEndErrors+" front-end errors.\n");
-//
-//		if ( frontEndErrors > 0) System.exit(1);
-//
-//    	System.out.println("Generating code.");
-//    	String code = new CodeGenerationASTVisitor().visit(ast);
-//    	BufferedWriter out = new BufferedWriter(new FileWriter(fileName+".asm"));
-//    	out.write(code);
-//    	out.close();
-//    	System.out.println("");
-//
-//    	System.out.println("Assembling generated code.");
-//    	CharStream charsASM = CharStreams.fromFileName(fileName+".asm");
-//    	SVMLexer lexerASM = new SVMLexer(charsASM);
-//    	CommonTokenStream tokensASM = new CommonTokenStream(lexerASM);
-//    	SVMParser parserASM = new SVMParser(tokensASM);
-//
-//    	parserASM.assembly();
-//
-//    	// needed only for debug
-//    	System.out.println("You had: "+lexerASM.lexicalErrors+" lexical errors and "+parserASM.getNumberOfSyntaxErrors()+" syntax errors.\n");
-//    	if (lexerASM.lexicalErrors+parserASM.getNumberOfSyntaxErrors()>0) System.exit(1);
-//
-//    	System.out.println("Running generated code via Stack Virtual Machine.");
-//    	ExecuteVM vm = new ExecuteVM(parserASM.code);
-//    	vm.cpu();
+    	int frontEndErrors = lexer.lexicalErrors+parser.getNumberOfSyntaxErrors()+symtableVisitor.stErrors+FOOLlib.typeErrors;
+		System.out.println("You had a total of "+frontEndErrors+" front-end errors.\n");
+
+		if ( frontEndErrors > 0) System.exit(1);
+
+    	System.out.println("Generating code.");
+    	String code = new CodeGenerationASTVisitor().visit(ast);
+    	BufferedWriter out = new BufferedWriter(new FileWriter(fileName+".asm"));
+    	out.write(code);
+    	out.close();
+    	System.out.println("");
+
+    	System.out.println("Assembling generated code.");
+    	CharStream charsASM = CharStreams.fromFileName(fileName+".asm");
+    	SVMLexer lexerASM = new SVMLexer(charsASM);
+    	CommonTokenStream tokensASM = new CommonTokenStream(lexerASM);
+    	SVMParser parserASM = new SVMParser(tokensASM);
+
+    	parserASM.assembly();
+
+    	// needed only for debug
+    	System.out.println("You had: "+lexerASM.lexicalErrors+" lexical errors and "+parserASM.getNumberOfSyntaxErrors()+" syntax errors.\n");
+    	if (lexerASM.lexicalErrors+parserASM.getNumberOfSyntaxErrors()>0) System.exit(1);
+
+    	System.out.println("Running generated code via Stack Virtual Machine.");
+    	ExecuteVM vm = new ExecuteVM(parserASM.code);
+    	vm.cpu();
 
     }
 }

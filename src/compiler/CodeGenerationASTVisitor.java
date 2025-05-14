@@ -3,10 +3,15 @@ package compiler;
 import compiler.AST.*;
 import compiler.lib.*;
 import compiler.exc.*;
+import svm.ExecuteVM;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static compiler.lib.FOOLlib.*;
 
 public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidException> {
-
+	List<List<String>> dispatchTables = new ArrayList<>();
 	CodeGenerationASTVisitor() {}
 	CodeGenerationASTVisitor(boolean debug) {super(false,debug);} //enables print for debugging
 
@@ -288,4 +293,154 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 		if (print) printNode(n,n.val.toString());
 		return "push "+n.val;
 	}
+
+	@Override
+	public String visitNode(MethodNode n) {
+		if (print) printNode(n, n.id);
+		String methl = freshFunLabel();
+		n.label = methl;
+
+		String declCode = null, popDecl = null, popParl = null;
+		for (Node dec : n.declist) {
+			declCode = nlJoin(declCode, visit(dec));
+			popDecl = nlJoin(popDecl, "pop");
+		}
+		for (int i = 0; i < n.parlist.size(); i++) {
+			popParl = nlJoin(popParl, "pop");
+		}
+		putCode(
+				nlJoin(
+						methl + ":",
+						"cfp",
+						"lra",
+						declCode,
+						visit(n.exp),
+						"stm",
+						popDecl,
+						"sra",
+						"pop",
+						popParl,
+						"sfp",
+						"ltm",
+						"lra",
+						"js"
+				)
+		);
+		return null;
+	}
+
+	@Override
+	public String visitNode(ClassNode n) {
+		if (print) printNode(n, n.id);
+		List<String> dispTable = new ArrayList<>();
+		for (MethodNode m : n.methods){
+			visit(m);
+			dispTable.add(m.label);
+		}
+
+		String dispTableCode = "";
+		for (String s : dispTable){
+			dispTableCode = nlJoin(
+					dispTableCode,
+					"push " + s,
+					"lhp",
+					"sw",
+					"lhp",
+					"push 1",
+					"add",
+					"shp"
+			);
+		}
+
+		return nlJoin(
+				"lhp",
+				dispTableCode
+		);
+	}
+
+
+
+	@Override
+	public String visitNode(EmptyNode n) {
+		if (print) printNode(n);
+		return "push -1";
+	}
+
+
+
+	@Override
+	public String visitNode(NewNode n) {
+		if (print) printNode(n);
+
+		String argCode = null, argHeapCode = null;
+
+		for (int i = 0; i < n.argList.size(); i++) {
+			argCode = nlJoin(argCode, visit(n.argList.get(i)));
+		}
+
+		for (int i = 0; i < n.argList.size(); i++){
+			argHeapCode = nlJoin(
+					argHeapCode,
+					"lhp",
+					"sw",
+					"lhp",
+					"push 1",
+					"add",
+					"shp"
+			);
+		}
+		return nlJoin(
+				argCode,
+				argHeapCode,
+				"push " + (ExecuteVM.MEMSIZE + n.entry.offset),
+				"lw",
+				"lhp",
+				"sw",
+				"lhp",
+				"lhp",
+				"push 1",
+				"add",
+				"shp"
+		);
+	}
+
+
+	@Override
+	public String visitNode(ClassCallNode n) {
+		if (print) printNode(n);
+		String arCode = null;
+		String getAr = null;
+
+		for (int i = n.argList.size() - 1; i >= 0; i--) {
+			arCode = nlJoin(arCode, visit(n.argList.get(i)));
+		}
+
+		for (int i = 0; i < n.nestingLevel - n.entry.nl; i++) {
+			getAr = nlJoin(getAr, "lw");
+		}
+
+		return nlJoin(
+				"lfp",
+				arCode,
+				"lfp",
+				getAr,
+				"push " + n.entry.offset,
+				"add",
+				"lw",
+				"stm",
+				"ltm",
+				"ltm",
+				"lw",
+				"push " + n.methodEntry.offset,
+				"add",
+				"lw",
+				"js"
+		);
+	}
+
+
+
+
+
+
 }
