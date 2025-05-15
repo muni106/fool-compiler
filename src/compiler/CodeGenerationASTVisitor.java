@@ -378,75 +378,67 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	}
 	@Override
 	public String visitNode(ClassCallNode n) {
-		if (print) printNode(n, n.methodId);
+		if (print) printNode(n, n.classId);
 
-		// Controllo che methodEntry sia definito
 		if (n.methodEntry == null) {
-			// Gestione dell'errore: il methodEntry non è stato definito
 			System.err.println("Errore: methodEntry non definito per il metodo " + n.methodId);
-			return "push -1"; // Ritorna un valore di errore o gestisci come preferisci
+			return "push -1"; // return error
 		}
-		// Generazione codice per i parametri
+
+		// Parameter code generation
 		String argCode = null, getAR = null;
 		for (int i = n.argList.size() - 1; i >= 0; i--) {
 			argCode = nlJoin(argCode, visit(n.argList.get(i)));
 		}
 
-		// Risalita della catena statica per trovare l'object pointer
 		for (int i = 0; i < n.nestingLevel - n.entry.nl; i++) {
 			getAR = nlJoin(getAR, "lw");
 		}
 
 		return nlJoin(
-				"lfp", // Carico il Control Link (puntatore al frame della funzione chiamante)
-				argCode, // Codice per i parametri
-				"lfp", getAR, // Risalita della catena statica per trovare l'object pointer
-				"push " + n.entry.offset, "add", // Trova l'oggetto aggiungendo l'offset
-				"lw", // Carica il puntatore all'oggetto
-				"stm", // Imposta $tm al valore poppato
-				"ltm", // Carica l'Access Link (puntatore al frame dell'oggetto)
-				"ltm", // Duplica il valore in cima allo stack (object pointer)
-				"lw", // Carica il dispatch pointer dell'oggetto
-				"push " + n.methodEntry.offset, "add", // Recupera l'indirizzo del metodo nella dispatch table
-				"lw", // Carica l'indirizzo del metodo
-				"js"  // Salta all'indirizzo del metodo, salvando il ritorno in $ra
+				"lfp",
+				argCode,
+				"lfp", getAR,
+				"push " + n.entry.offset,
+				"add",
+				"lw",
+				"stm",
+				"ltm",
+				"ltm",
+				"lw",
+				"push " + n.methodEntry.offset,
+				"add",
+				"lw",
+				"js"
 		);
 	}
 	@Override
 	public String visitNode(NewNode n) {
 		if (print) printNode(n, n.classId);
-
-		String fieldsOnStack = null;
-		String fieldsOnHeap = null;
-
-		// Mettiamo sullo stack tutti i valori dei campi
+		String argCode = null, heapCode = null;
 		for (Node param : n.argList) {
-			fieldsOnStack = nlJoin(fieldsOnStack, visit(param));
-
-			// Spostiamo i valori dallo stack allo heap, incrementando $hp
-			fieldsOnHeap = nlJoin(fieldsOnHeap,
-					"lhp", // Carica il valore di $hp
-					"sw",  // Memorizza il valore nello heap
-					"lhp", // Ricarica $hp
+			argCode = nlJoin(argCode, visit(param));
+			heapCode = nlJoin(heapCode,
+					"lhp",
+					"sw",
+					"lhp",
 					"push 1",
 					"add",
-					"shp" // Incrementa $hp
+					"shp"
 			);
 		}
-		// Inserimento del dispatch pointer
-		String dispatchPointer = nlJoin(
-				"push " + (ExecuteVM.MEMSIZE + n.entry.offset), // Recupera il dispatch pointer
-				"lw", // Carica il valore dal global AR
-				"lhp", // Carica l'heap pointer
-				"sw"  // Memorizza il dispatch pointer nello heap
-		);
-
 		return nlJoin(
-				fieldsOnStack, // Genera codice per i parametri
-				fieldsOnHeap, // Sposta i valori dallo stack allo heap
-				dispatchPointer, // Memorizza il dispatch pointer
-				"lhp", // Duplica l'object pointer
-				"lhp", "push 1", "add", "shp" // Incrementa $hp
+				argCode,
+				heapCode,
+				"push " + (ExecuteVM.MEMSIZE + n.entry.offset),
+				"lw",
+				"lhp",
+				"sw",
+				"lhp",
+				"lhp",
+				"push 1",
+				"add",
+				"shp"
 		);
 	}
 	@Override
