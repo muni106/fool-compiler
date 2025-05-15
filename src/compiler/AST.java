@@ -1,6 +1,5 @@
 package compiler;
 
-import java.lang.reflect.Type;
 import java.util.*;
 import compiler.lib.*;
 
@@ -39,8 +38,6 @@ public class AST {
 	    	declist=Collections.unmodifiableList(dl); 
 	    	exp=e;
 	    }
-		
-		//void setType(TypeNode t) {type = t;}
 		
 		@Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
@@ -172,6 +169,8 @@ public class AST {
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
 
+	// NEW OPERATORS
+
 	public static class GreaterEqualNode extends TypeNode {
 		final Node left;
 		final Node right;
@@ -231,9 +230,10 @@ public class AST {
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
 
-	// TODO implement these
+	// OBJECT EXTENSION
 
 	// declarations
+
 	public static class ClassNode extends DecNode {
 		final String id;
 		final String superId;
@@ -255,6 +255,7 @@ public class AST {
         @Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
+
 	public static class FieldNode extends DecNode {
 		final String id;
 		int offset;
@@ -267,13 +268,14 @@ public class AST {
         @Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
+
+
 	public static class MethodNode extends DecNode {
 		final String id;
-		final TypeNode retType;
-		final List<ParNode> parlist;
-		final List<DecNode> declist;
+		final TypeNode returnType;
+		final List<ParNode> parameterList;
+		final List<DecNode> declarationList;
 		final Node exp;
-		// Fields for code generation:
 		String label;
 		int offset;
 
@@ -281,11 +283,11 @@ public class AST {
 			this.type = t;
 		}
 
-        public MethodNode(String id, TypeNode retType, List<ParNode> parlist, List<DecNode> declist, Node exp) {
+        public MethodNode(String id, TypeNode returnType, List<ParNode> parameterList, List<DecNode> declarationList, Node exp) {
             this.id = id;
-            this.retType = retType;
-            this.parlist = parlist;
-            this.declist = declist;
+            this.returnType = returnType;
+            this.parameterList = parameterList;
+            this.declarationList = declarationList;
             this.exp = exp;
         }
 
@@ -294,6 +296,7 @@ public class AST {
 	}
 
 	// expressions
+
 	public static class ClassCallNode extends Node {
 		final String classId;
 		final String methodId;
@@ -332,14 +335,10 @@ public class AST {
 	}
 
 	// types
+
 	public static class ClassTypeNode extends TypeNode {
 		final List<TypeNode> fields;
 		final List<ArrowTypeNode> methods;
-
-		public ClassTypeNode() {
-            this.fields = new ArrayList<>();
-			this.methods = new ArrayList<>();
-		}
 
         public ClassTypeNode(List<TypeNode> fields, List<ArrowTypeNode> methods) {
             this.fields = fields;
@@ -349,6 +348,7 @@ public class AST {
         @Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
+
 	public static class RefTypeNode extends TypeNode {
 		final String className;
 
@@ -359,8 +359,8 @@ public class AST {
         @Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
-	public static class EmptyTypeNode extends TypeNode {
 
+	public static class EmptyTypeNode extends TypeNode {
 		@Override
 		public <S,E extends Exception> S accept(BaseASTVisitor<S,E> visitor) throws E {return visitor.visitNode(this);}
 	}
