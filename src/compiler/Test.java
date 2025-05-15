@@ -23,12 +23,12 @@ public class Test {
     		parser.getNumberOfSyntaxErrors()+" syntax errors.\n");
 
     	System.out.println("Generating AST.");
-    	ASTGenerationSTVisitor visitor = new ASTGenerationSTVisitor(true); // use true to visualize the ST
+    	ASTGenerationSTVisitor visitor = new ASTGenerationSTVisitor(); // use true to visualize the ST
     	Node ast = visitor.visit(st);
     	System.out.println("");
 
     	System.out.println("Enriching AST via symbol table.");
-    	SymbolTableASTVisitor symtableVisitor = new SymbolTableASTVisitor(true);
+    	SymbolTableASTVisitor symtableVisitor = new SymbolTableASTVisitor();
     	symtableVisitor.visit(ast);
     	System.out.println("You had " + symtableVisitor.stErrors+" symbol table errors.\n");
 

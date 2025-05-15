@@ -10,7 +10,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	private final List<Map<String, STentry>> symTable = new ArrayList<>();
 	private final Map<String, Map<String, STentry>> classTable = new HashMap<>();
 	private int nestingLevel=0; // current nesting level
-	private int decOffset=-2; // counter for offset of local declarations at current nesting level
+	private int decOffset=-2; // offset of local declarations => current nesting level
 	int stErrors=0;
 
 	SymbolTableASTVisitor() {}
@@ -128,7 +128,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		visit(n.right);
 		return null;
 	}
-	//--------------------------- OPERATOR EXTENSIONS ------------------------------------
+
 	@Override
 	public Void visitNode(MinusNode n){
 		if (print) printNode(n);
