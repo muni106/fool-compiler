@@ -8,7 +8,7 @@ import static compiler.TypeRels.*;
 //visitNode(n) fa il type checking di un Node n e ritorna:
 //- per una espressione, il suo tipo (oggetto BoolTypeNode o IntTypeNode)
 //- per una dichiarazione, "null"; controlla la correttezza interna della dichiarazione
-//(- per un tipo: "null"; controlla che il tipo non sia incompleto) 
+//(- per un tipo: "null"; controlla che il tipo non sia incompleto)
 //
 //visitSTentry(s) ritorna, per una STentry s, il tipo contenuto al suo interno
 public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException> {
@@ -77,9 +77,8 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			throw new TypeException("Non boolean condition in if",n.getLine());
 		TypeNode t = visit(n.th);
 		TypeNode e = visit(n.el);
-
 		if (lowestCommonAncestor(t, e) != null) return lowestCommonAncestor(t, e);
-		else throw new TypeException("Incompatible types in then-else branches",n.getLine());
+		else throw new TypeException("Incompatible types in then-else branches", n.getLine());
 	}
 
 	@Override
