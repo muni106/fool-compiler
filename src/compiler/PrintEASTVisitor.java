@@ -145,7 +145,7 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 
 	@Override
 	public Void visitNode(CallNode n) {
-		printNode(n,n.id+" at nestinglevel "+n.nl);
+		printNode(n,n.id + " at nestinglevel " + n.nl);
 		visit(n.entry);
 		for (Node arg : n.arglist) visit(arg);
 		return null;
@@ -153,20 +153,20 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 
 	@Override
 	public Void visitNode(IdNode n) {
-		printNode(n,n.id+" at nestinglevel "+n.nestingLevel);
+		printNode(n,n.id + " at nestinglevel " + n.nestingLevel);
 		visit(n.entry);
 		return null;
 	}
 
 	@Override
 	public Void visitNode(BoolNode n) {
-		printNode(n,n.val.toString());
+		printNode(n, n.val.toString());
 		return null;
 	}
 
 	@Override
 	public Void visitNode(IntNode n) {
-		printNode(n,n.val.toString());
+		printNode(n, n.val.toString());
 		return null;
 	}
 	
@@ -174,7 +174,7 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 	public Void visitNode(ArrowTypeNode n) {
 		printNode(n);
 		for (Node par: n.parlist) visit(par);
-		visit(n.ret,"->"); //marks return type
+		visit(n.ret,"->");
 		return null;
 	}
 
@@ -192,7 +192,7 @@ public class PrintEASTVisitor extends BaseEASTVisitor<Void,VoidException> {
 	
 	@Override
 	public Void visitSTentry(STentry entry) {
-		printSTentry("nestlev " + entry.nl);
+		printSTentry("nestinglevel " + entry.nl);
 		printSTentry("type");
 		visit(entry.type);
 		printSTentry("offset " + entry.offset);

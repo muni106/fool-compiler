@@ -260,7 +260,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		}
 		symTable.add(virtualTable);
 		classTable.put(n.id, virtualTable);
-		
+
 		// fields
 		virtualTable = symTable.get(nestingLevel);
 		int fieldOffset = -fieldTypeList.size() - 1;
