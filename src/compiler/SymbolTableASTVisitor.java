@@ -229,24 +229,24 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	// OBJECT EXTENSION
 
 	@Override
-	public Void visitNode(ClassNode n) throws VoidException {
+	public Void visitNode(ClassNode n) {
 		if (print) printNode(n);
 
 		Set<String> fieldsAndMethods = new HashSet<>(); // optimization 1
 		Map<String, STentry> globalSymTable = symTable.getFirst();
-		List<TypeNode> allFields = new ArrayList<>();
-		List<ArrowTypeNode> allMethods = new ArrayList<>();
+		List<TypeNode> fieldTypeList = new ArrayList<>();
+		List<ArrowTypeNode> methodTypeList = new ArrayList<>();
 
-		// handle super-class
+		// superclass management
 		if (n.superId != null) {
 			STentry superClassEntry = globalSymTable.get(n.superId);
 			n.superEntry = superClassEntry;
 			ClassTypeNode classType = (ClassTypeNode) superClassEntry.type;
-			allFields.addAll(classType.fields);
-			allMethods.addAll(classType.methods);
+			fieldTypeList.addAll(classType.fields);
+			methodTypeList.addAll(classType.methods);
 		}
 
-		STentry entry = new STentry(0, new ClassTypeNode(allFields, allMethods), decOffset--);
+		STentry entry = new STentry(0, new ClassTypeNode(fieldTypeList, methodTypeList), decOffset--);
 		n.setType(entry.type);
 
 		if (globalSymTable.put(n.id, entry) != null) {
@@ -254,7 +254,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			stErrors++;
 		}
 
-		// init virtual table
+		// virtual table management
 		nestingLevel++;
 		Map<String, STentry> virtualTable = new HashMap<>();
 		if (n.superId != null) {
@@ -263,55 +263,50 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		symTable.add(virtualTable);
 		classTable.put(n.id, virtualTable);
 
-		// fields
+		// fields management
 		virtualTable = symTable.get(nestingLevel);
-		int fieldOffset = -allFields.size() - 1;
-		Set<String> newFields = new HashSet<>();
+		int fieldOffset = -fieldTypeList.size() - 1;
 
 		for (FieldNode field : n.fields) {
 			if (print) printNode(field);
 			if (fieldsAndMethods.contains(field.id)) {
-				System.out.println("Field or Method " + field.id + " at line " + field.getLine() + " already declared");
+				System.out.println("Field or Method " + field.id + " at line " + field.getLine() + " already declared ");
 				stErrors++;
 			} else {
+				STentry superEntry = virtualTable.get(field.id);
+				STentry fieldEntry;
+				if (superEntry == null) {
+					fieldEntry = new STentry(nestingLevel, field.getType(), fieldOffset--);
+				} else {
+					if (superEntry.type instanceof ArrowTypeNode) {
+						System.out.println("Can't ovverride method with field, line: " + field.getLine());
+						stErrors++;
+					}
+					fieldEntry =  new STentry(nestingLevel, field.getType(), superEntry.offset);
+				}
 				fieldsAndMethods.add(field.id);
-				STentry oldEntry = virtualTable.get(field.id);
-				STentry fieldEntry = makeFieldEntry(field, oldEntry, fieldOffset--);
 				field.offset = fieldEntry.offset;
 				virtualTable.put(field.id, fieldEntry);
-				allFields.add(-fieldEntry.offset - 1, field.getType());
+				fieldTypeList.add(-fieldEntry.offset - 1, field.getType());
 			}
 		}
 		int prevNLDecOffset = decOffset;
-		decOffset = allMethods.size();
+		decOffset = methodTypeList.size();
 
-		// methods
+		// methods management
 		for (MethodNode method : n.methods) {
 			if (fieldsAndMethods.contains(method.id)) {
-				System.out.println("Method id " + method.id + " at line " + method.getLine() + " already declared");
+				System.out.println("Method: " + method.id + " at line " + method.getLine() + " already declared");
 				stErrors++;
 			} else {
 				fieldsAndMethods.add(method.id);
 				visit(method);
-				allMethods.add(method.offset, (ArrowTypeNode) method.getType());
+				methodTypeList.add(method.offset, (ArrowTypeNode) method.getType());
 			}
 		}
-
 		symTable.remove(nestingLevel--);
 		decOffset = prevNLDecOffset;
-
 		return null;
-	}
-
-	private STentry makeFieldEntry(FieldNode field, STentry oldEntry, int fieldOffset) {
-		if (oldEntry == null) {
-			return new STentry(nestingLevel, field.getType(), fieldOffset);
-		}
-		if (oldEntry.type instanceof ArrowTypeNode) {
-			System.out.println("Cannot override method " + field.id + "() at line " + field.getLine() + " with a field ");
-			stErrors++;
-		}
-		return new STentry(nestingLevel, field.getType(), oldEntry.offset);
 	}
 
 	@Override
@@ -328,7 +323,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			methodEntry = new STentry(nestingLevel, new ArrowTypeNode(parameterTypeList, n.returnType), decOffset++);
 		} else {
 			if (!(superEntry.type instanceof ArrowTypeNode)) {
-				System.out.println("Cannot override field " + n.id + " at line " + n.getLine() + " with method " + n.id + "()");
+				System.out.println("Cannot override field " + n.id + " at line " + n.getLine() + " with method " + n.id);
 				stErrors++;
 
 			}
@@ -353,7 +348,6 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			visit(dec);
 		}
 		visit(n.exp);
-
 		symTable.remove(nestingLevel--);
 		decOffset = prevDecOffset;
 		return null;
@@ -364,20 +358,20 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		if (print) printNode(n);
 		STentry entry = stLookup(n.classId);
 		if (entry == null) {
-			System.out.println(n.classId + " at line " + n.getLine() + " not declared");
+			System.out.println(n.classId + " at line: " + n.getLine() + " not declared");
 			stErrors++;
 		} else {
 			if (!(entry.type instanceof RefTypeNode)) {
-				System.out.println(n.classId + " at line " + n.getLine() + " is not a RefTypeNode");
+				System.out.println(n.classId + " at line: " + n.getLine() + " is not a RefTypeNode");
 				stErrors++;
 			}
 			n.entry = entry;
 			n.nestingLevel = nestingLevel;
 
-			String classId = ((RefTypeNode) entry.type).classId;
-			STentry methodEntry = classTable.get(classId).get(n.methodId);
+			RefTypeNode classRef = (RefTypeNode) entry.type;
+			STentry methodEntry = classTable.get(classRef.classId).get(n.methodId);
 			if (methodEntry == null) {
-				System.out.println("Method: " + n.methodId + " at line " + n.getLine() + " was not declared");
+				System.out.println("Method: " + n.methodId + " at line: " + n.getLine() + ", was not declared");
 				stErrors++;
 			} else {
 				n.methodEntry = methodEntry;
