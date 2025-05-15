@@ -350,10 +350,10 @@ public class AST {
 	}
 
 	public static class RefTypeNode extends TypeNode {
-		final String className;
+		final String classId;
 
-        public RefTypeNode(String className) {
-            this.className = className;
+        public RefTypeNode(String classId) {
+            this.classId = classId;
         }
 
         @Override

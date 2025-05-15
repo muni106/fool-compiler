@@ -13,8 +13,8 @@ public class TypeRels {
 	public static boolean isSubtype(TypeNode a, TypeNode b) {
 
 		if ((a instanceof RefTypeNode) && (b instanceof RefTypeNode)) {
-			String subClass = ((RefTypeNode) a ).className;
-			String superClass = ((RefTypeNode) b ).className;
+			String subClass = ((RefTypeNode) a ).classId;
+			String superClass = ((RefTypeNode) b ).classId;
 
 			while (subClass != null) {
 				if (subClass.equals(superClass)) return true;
@@ -63,8 +63,8 @@ public class TypeRels {
 			List<String> pathA = new ArrayList<>();
 			List<String> pathB = new ArrayList<>();
 
-			String currA = refA.className;
-			String currB = refB.className;
+			String currA = refA.classId;
+			String currB = refB.classId;
 
 			pathA.add(currA);
 			pathB.add(currB);
