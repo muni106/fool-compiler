@@ -349,13 +349,13 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 
 		// Generazione codice per dichiarazioni locali e rimozione dallo stack
 		String declCode = null, popDecl = null, popParl = null;
-		for (Node dec : n.declist) {
+		for (Node dec : n.declarationList) {
 			declCode = nlJoin(declCode, visit(dec));
 			popDecl = nlJoin(popDecl, "pop");
 		}
 
 		// Rimozione parametri dallo stack
-		for (int i = 0; i < n.parlist.size(); i++) {
+		for (int i = 0; i < n.parameterList.size(); i++) {
 			popParl = nlJoin(popParl, "pop");
 		}
 

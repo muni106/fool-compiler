@@ -332,7 +332,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 
 	private List<TypeNode> extractParameterTypes(MethodNode n) {
 		List<TypeNode> parTypes = new ArrayList<>();
-		for (ParNode par : n.parlist) {
+		for (ParNode par : n.parameterList) {
 			parTypes.add(par.getType());
 		}
 		return parTypes;
@@ -341,7 +341,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	private STentry createOrRetrieveMethodEntry(MethodNode n, Map<String, STentry> virtualTable, List<TypeNode> parTypes) {
 		STentry oldEntry = virtualTable.get(n.id);
 		if (oldEntry == null) {
-			return new STentry(nestingLevel, new ArrowTypeNode(parTypes, n.retType), decOffset++);
+			return new STentry(nestingLevel, new ArrowTypeNode(parTypes, n.returnType), decOffset++);
 		} else {
 			if (!(oldEntry.type instanceof ArrowTypeNode)) {
 				System.out.println("Cannot override field " + n.id + " at line " + n.getLine() + " with method " + n.id + "()");
@@ -361,7 +361,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		decOffset = -2;
 
 		declareParameters(n, methodScope);
-		for (Node dec : n.declist) {
+		for (Node dec : n.declarationList) {
 			visit(dec);
 		}
 		visit(n.exp);
@@ -372,7 +372,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 
 	private void declareParameters(MethodNode n, Map<String, STentry> methodScope) {
 		int parOffset = 1;
-		for (ParNode par : n.parlist) {
+		for (ParNode par : n.parameterList) {
 			if (methodScope.put(par.id, new STentry(nestingLevel, par.getType(), parOffset++)) != null) {
 				System.out.println("Par id " + par.id + " at line " + n.getLine() + " already declared");
 				stErrors++;
