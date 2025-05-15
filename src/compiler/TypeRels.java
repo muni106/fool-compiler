@@ -3,8 +3,7 @@ package compiler;
 import compiler.AST.*;
 import compiler.lib.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class TypeRels {
 	// <subClass: string, superClass: string>
@@ -12,13 +11,8 @@ public class TypeRels {
 
 	// valuta se il tipo "a" e' <= al tipo "b", dove "a" e "b" sono tipi di base: IntTypeNode o BoolTypeNode
 	public static boolean isSubtype(TypeNode a, TypeNode b) {
-		if (a.getClass().equals(b.getClass())
-				|| ((a instanceof BoolTypeNode) && (b instanceof IntTypeNode))
-				|| ((a instanceof  EmptyTypeNode) && (b instanceof RefTypeNode))
-				|| ((a instanceof  RefTypeNode) && (b instanceof EmptyTypeNode)))
-			return true;
 
-		if (a instanceof RefTypeNode && b instanceof RefTypeNode) {
+		if ((a instanceof RefTypeNode) && (b instanceof RefTypeNode)) {
 			String subClass = ((RefTypeNode) a ).className;
 			String superClass = ((RefTypeNode) b ).className;
 
@@ -26,16 +20,15 @@ public class TypeRels {
 				if (subClass.equals(superClass)) return true;
 				else subClass = superType.get(subClass);
 			}
+			return false;
 		}
 
 		// Method subtyping
-		if (a instanceof ArrowTypeNode && b instanceof ArrowTypeNode) {
-			ArrowTypeNode subClassMethod = (ArrowTypeNode) a;
-			ArrowTypeNode superClassMethod = (ArrowTypeNode) b;
+		if (a instanceof ArrowTypeNode subClassMethod && b instanceof ArrowTypeNode superClassMethod) {
 			// contro-varianza parametri
 			if (subClassMethod.parlist.size() != superClassMethod.parlist.size()) return false;
 			for (int i = 0; i < subClassMethod.parlist.size(); i++) {
-				if (!isSubtype(superClassMethod.parlist.get(i), subClassMethod.parlist.get(i))) {
+				if (!isSubtype(subClassMethod.parlist.get(i), superClassMethod.parlist.get(i))) {
 					return false;
 				}
 			}
@@ -43,13 +36,67 @@ public class TypeRels {
 			return isSubtype(subClassMethod.ret, superClassMethod.ret);
 		}
 
-		// Field subtyping
-		return false;
-	}
+        return a.getClass().equals(b.getClass())
+                || ((a instanceof BoolTypeNode) && (b instanceof IntTypeNode))
+                || ((a instanceof EmptyTypeNode) && (b instanceof RefTypeNode));
+    }
 
-	public static void addTypeReference(String subClass, String superClass) {
+	public static void addClassTypeReference(String subClass, String superClass) {
 		superType.put(subClass, superClass);
 	}
+
+	// for ifNode
+	public static TypeNode lowestCommonAncestor(TypeNode a, TypeNode b) {
+		// bool/int Nodes management
+		if ((a instanceof BoolTypeNode) && (b instanceof IntTypeNode)
+			|| (a instanceof IntTypeNode) && (b instanceof BoolTypeNode)
+			|| (a instanceof IntTypeNode) && (b instanceof IntTypeNode))
+			return new IntTypeNode();
+		if ((a instanceof BoolTypeNode) && (b instanceof BoolTypeNode)) return new BoolTypeNode();
+
+		// EmptyTypeNode management
+		if ((a instanceof EmptyTypeNode) && (b instanceof RefTypeNode)) return b;
+		if ((a instanceof RefTypeNode) && (b instanceof EmptyTypeNode)) return a;
+
+		// Class management
+		if ((a instanceof  RefTypeNode refA) && (b instanceof RefTypeNode refB)) {
+			List<String> pathA = new ArrayList<>();
+			List<String> pathB = new ArrayList<>();
+
+			String currA = refA.className;
+			String currB = refB.className;
+
+			pathA.add(currA);
+			pathB.add(currB);
+
+			// fill pathA
+			while (superType.containsKey(currA)){
+				currA = superType.get(currA);
+				pathA.add(currA);
+			}
+
+			// fill pathB
+			while (superType.containsKey(currB)){
+				currB = superType.get(currB);
+				pathA.add(currB);
+			}
+
+			// little optimization not required but cool
+			if (!currA.equals(currB)) return null;
+
+			for (int i = 0; i < pathA.size(); i++) {
+				for (int j = 0; j < pathB.size(); j++) {
+					if (pathA.get(i).equals(pathB.get(j))) return new RefTypeNode(pathA.get(i));
+				}
+			}
+		}
+
+
+		return null;
+
+	}
+
+
 
 
 }

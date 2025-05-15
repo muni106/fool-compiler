@@ -138,7 +138,10 @@ lfp
 push -8
 add
 lw
-push -1
+lfp
+push -7
+add
+lw
 beq label10
 push 0
 b label11

@@ -77,9 +77,12 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			throw new TypeException("Non boolean condition in if",n.getLine());
 		TypeNode t = visit(n.th);
 		TypeNode e = visit(n.el);
-		if (isSubtype(t, e)) return e;
-		if (isSubtype(e, t)) return t;
-		throw new TypeException("Incompatible types in then-else branches",n.getLine());
+//		if (isSubtype(t, e)) return e;
+//		if (isSubtype(e, t)) return t;
+//		throw new TypeException("Incompatible types in then-else branches",n.getLine());
+
+		if (lowestCommonAncestor(t, e) != null) return lowestCommonAncestor(t, e);
+		else throw new TypeException("Incompatible types in then-else branches",n.getLine());
 	}
 
 	@Override
@@ -261,7 +264,7 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 	public TypeNode visitNode(ClassNode n) throws TypeException {
 		if (print) printNode(n, n.id);
 		if (n.superId != null) {
-			addTypeReference(n.id, n.superId);
+			addClassTypeReference(n.id, n.superId);
 		}
 		for (MethodNode method : n.methods) {
 			try {
@@ -273,18 +276,18 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 
 		if (n.superEntry != null) {
 			ClassTypeNode classTypeNode = (ClassTypeNode) n.getType();
-			ClassTypeNode superType = (ClassTypeNode) n.superEntry.type;
+			ClassTypeNode superClassTypeNode = (ClassTypeNode) n.superEntry.type;
 			for (FieldNode field : n.fields) {
 				int fieldPos = -field.offset - 1;
-				if (fieldPos < superType.fields.size() && !isSubtype(classTypeNode.fields.get(fieldPos), superType.fields.get(fieldPos))) {
+				if (fieldPos < superClassTypeNode.fields.size() && !isSubtype(classTypeNode.fields.get(fieldPos), superClassTypeNode.fields.get(fieldPos))) {
 					throw new TypeException("Overridden fields need to be subtype of the super fields ", n.getLine());
 				}
 			}
 
 			for (MethodNode method : n.methods) {
 				int methodPos = method.offset;
-				if (methodPos < superType.methods.size() &&
-						!isSubtype(classTypeNode.methods.get(methodPos), superType.methods.get(methodPos))) {
+				if (methodPos < superClassTypeNode.methods.size() &&
+						!isSubtype(classTypeNode.methods.get(methodPos), superClassTypeNode.methods.get(methodPos))) {
 					throw new TypeException("Overridden methods need to be subtype of the super methods", n.getLine());
 				}
 			}
@@ -341,7 +344,7 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 			throw new TypeException("Wrong number of parameters in the invocation of "+n.classId + "." + n.methodId,n.getLine());
 		for (int i = 0; i < n.argList.size(); i++)
 			if ( !(isSubtype(visit(n.argList.get(i)),at.parlist.get(i))) )
-				throw new TypeException("Wrong type for "+(i+1)+"-th parameter in the invocation of " + n.classId + "." + n.methodId,n.getLine());
+				throw new TypeException("Wrong type for " + (i + 1 )+"-th parameter in the invocation of " + n.classId + "." + n.methodId,n.getLine());
 		return at.ret;
 	}
 

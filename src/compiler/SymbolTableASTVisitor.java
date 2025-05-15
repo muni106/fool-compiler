@@ -231,11 +231,19 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 	public Void visitNode(ClassNode n) throws VoidException {
 		if (print) printNode(n);
 
-		Map<String, STentry> globalSymTable = symTable.get(0);
+		Set<String> fieldsAndMethods = new HashSet<>(); // optimization 1
+		Map<String, STentry> globalSymTable = symTable.getFirst();
 		List<TypeNode> allFields = new ArrayList<>();
 		List<ArrowTypeNode> allMethods = new ArrayList<>();
 
-		handleSuperclass(n, globalSymTable, allFields, allMethods);
+		// handle super-class
+		if (n.superId != null) {
+			STentry superClassEntry = globalSymTable.get(n.superId);
+			n.superEntry = superClassEntry;
+			ClassTypeNode classType = (ClassTypeNode) superClassEntry.type;
+			allFields.addAll(classType.fields);
+			allMethods.addAll(classType.methods);
+		}
 
 		STentry entry = new STentry(0, new ClassTypeNode(allFields, allMethods), decOffset--);
 		n.setType(entry.type);
@@ -245,32 +253,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			stErrors++;
 		}
 
-		initializeSymbolTable(n);
-
-		processFields(n, allFields);
-
-		int prevNLDecOffset = decOffset;
-		decOffset = allMethods.size();
-		processMethods(n, allMethods);
-
-		symTable.remove(nestingLevel--);
-		decOffset = prevNLDecOffset;
-
-		return null;
-	}
-
-	private void handleSuperclass(ClassNode n, Map<String, STentry> globalSymTable,
-								  List<TypeNode> allFields, List<ArrowTypeNode> allMethods) {
-		if (n.superId != null) {
-			STentry superClassEntry = globalSymTable.get(n.superId);
-			n.superEntry = superClassEntry;
-			ClassTypeNode classType = (ClassTypeNode) superClassEntry.type;
-			allFields.addAll(classType.fields);
-			allMethods.addAll(classType.methods);
-		}
-	}
-
-	private void initializeSymbolTable(ClassNode n) {
+		// init virtual table
 		nestingLevel++;
 		Map<String, STentry> virtualTable = new HashMap<>();
 		if (n.superId != null) {
@@ -278,51 +261,58 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		}
 		symTable.add(virtualTable);
 		classTable.put(n.id, virtualTable);
-	}
 
-	private void processFields(ClassNode n, List<TypeNode> allFields) {
-		Map<String, STentry> virtualTable = symTable.get(nestingLevel);
+		// fields
+		virtualTable = symTable.get(nestingLevel);
 		int fieldOffset = -allFields.size() - 1;
 		Set<String> newFields = new HashSet<>();
 
 		for (FieldNode field : n.fields) {
 			if (print) printNode(field);
-			if (!newFields.add(field.id)) {
-				System.out.println("Field id " + field.id + " at line " + field.getLine() + " already declared");
+			if (fieldsAndMethods.contains(field.id)) {
+				System.out.println("Field or Method " + field.id + " at line " + field.getLine() + " already declared");
 				stErrors++;
+				} else {
+				fieldsAndMethods.add(field.id);
+				STentry oldEntry = virtualTable.get(field.id);
+				STentry fieldEntry = makeFieldEntry(field, oldEntry, fieldOffset--);
+				field.offset = fieldEntry.offset;
+				virtualTable.put(field.id, fieldEntry);
+				allFields.add(-fieldEntry.offset - 1, field.getType());
 			}
-
-			STentry oldEntry = virtualTable.get(field.id);
-			STentry fieldEntry = createFieldEntry(field, oldEntry, fieldOffset--);
-			field.offset = fieldEntry.offset;
-			virtualTable.put(field.id, fieldEntry);
-			allFields.add(-fieldEntry.offset - 1, field.getType());
 		}
+		int prevNLDecOffset = decOffset;
+		decOffset = allMethods.size();
+
+		// methods
+		for (MethodNode method : n.methods) {
+			if (fieldsAndMethods.contains(method.id)) {
+				System.out.println("Method id " + method.id + " at line " + method.getLine() + " already declared");
+				stErrors++;
+				} else {
+				fieldsAndMethods.add(method.id);
+				visit(method);
+				allMethods.add(method.offset, (ArrowTypeNode) method.getType());
+			}
+		}
+
+		symTable.remove(nestingLevel--);
+		decOffset = prevNLDecOffset;
+
+		return null;
 	}
 
-	private STentry createFieldEntry(FieldNode field, STentry oldEntry, int fieldOffset) {
+	private STentry makeFieldEntry(FieldNode field, STentry oldEntry, int fieldOffset) {
 		if (oldEntry == null) {
 			return new STentry(nestingLevel, field.getType(), fieldOffset);
 		}
 		if (oldEntry.type instanceof ArrowTypeNode) {
-			System.out.println("Cannot override method " + field.id + "() at line "
-					+ field.getLine() + " with field " + field.id);
+			System.out.println("Cannot override method " + field.id + "() at line " + field.getLine() + " with a field ");
 			stErrors++;
 		}
 		return new STentry(nestingLevel, field.getType(), oldEntry.offset);
 	}
 
-	private void processMethods(ClassNode n, List<ArrowTypeNode> allMethods) {
-		Set<String> newMethods = new HashSet<>();
-		for (MethodNode method : n.methods) {
-			if (!newMethods.add(method.id)) {
-				System.out.println("Method id " + method.id + " at line " + method.getLine() + " already declared");
-				stErrors++;
-			}
-			visit(method);
-			allMethods.add(method.offset, (ArrowTypeNode) method.getType());
-		}
-	}
 
 	@Override
 	public Void visitNode(MethodNode n) throws VoidException {
@@ -356,6 +346,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			if (!(oldEntry.type instanceof ArrowTypeNode)) {
 				System.out.println("Cannot override field " + n.id + " at line " + n.getLine() + " with method " + n.id + "()");
 				stErrors++;
+
 			}
 			return new STentry(nestingLevel, oldEntry.type, oldEntry.offset);
 		}
@@ -389,7 +380,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 		}
 	}
 	@Override
-	public Void visitNode(ClassCallNode n) {
+	public Void visitNode(ClassCallNode n) throws VoidException {
 		if (print) printNode(n);
 
 		STentry entry = stLookup(n.classId);
@@ -405,7 +396,7 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 				} else {
 					System.out.println("Method id " + n.classId + "." + n.methodId + " at line " + n.getLine() + " not declared");
 					stErrors++;
-				}
+					}
 			} else {
 				System.out.println("Reference id " + n.classId + " at line " + n.getLine() + " is not a RefType");
 				stErrors++;
