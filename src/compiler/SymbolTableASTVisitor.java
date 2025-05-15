@@ -360,6 +360,10 @@ public class SymbolTableASTVisitor extends BaseASTVisitor<Void,VoidException> {
 			System.out.println(n.classId + " at line " + n.getLine() + " not declared");
 			stErrors++;
 		} else {
+			if (!(entry.type instanceof RefTypeNode)) {
+				System.out.println(n.classId + " at line " + n.getLine() + " is not a RefTypeNode");
+				stErrors++;
+			}
 			n.entry = entry;
 			n.nestingLevel = nestingLevel;
 
