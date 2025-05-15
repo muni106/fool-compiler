@@ -15,6 +15,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	CodeGenerationASTVisitor() {}
 	CodeGenerationASTVisitor(boolean debug) {super(false,debug);} //enables print for debugging
 
+
 	@Override
 	public String visitNode(ProgLetInNode n) {
 		if (print) printNode(n);
@@ -66,7 +67,7 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 						"js"  // jump to to popped address
 				)
 		);
-		return "push " + funl;
+		return "push "+funl;
 	}
 
 	@Override
@@ -297,89 +298,79 @@ public class CodeGenerationASTVisitor extends BaseASTVisitor<String, VoidExcepti
 	@Override
 	public String visitNode(ClassNode n){
 		if (print) printNode(n, n.id);
-		// Inserisco tutti i metodi della classe, ereditati e non, nella Dispatch Table
-		// Recupero la dispatch table della superclasse se presente
-		List<String> dT = new ArrayList<>();
+		List<String> dispatchTable = new ArrayList<>();
 
-		// Controllo sia superId che superEntry prima di accedere all'offset
+		// retrieve dispatch table of super class if present
 		if (n.superId != null && n.superEntry != null) {
-			int superIndex = -n.superEntry.offset - 2;
-			if (superIndex >= 0 && superIndex < dispatchTables.size()) {
-				dT = new ArrayList<>(dispatchTables.get(superIndex));
+			int superPos = -n.superEntry.offset - 2;
+			if (superPos >= 0 && superPos < dispatchTables.size()) {
+				dispatchTable = new ArrayList<>(dispatchTables.get(superPos));
 			}
 		}
+
+		// add methods to dispatch table
 		for (MethodNode method : n.methods) {
 			visit(method);
-
-			if (method.offset < dT.size()) { // Overriding
-				dT.set(method.offset, method.label);
-			} else { // Nuovo metodo
-				// Assicuro che ci siano abbastanza spazi nella lista
-				while(dT.size() <= method.offset) {
-					dT.add(null);
+			if (method.offset < dispatchTable.size()) {
+				dispatchTable.set(method.offset, method.label);
+			} else {
+				while(dispatchTable.size() <= method.offset) {
+					dispatchTable.add(null);
 				}
-				dT.set(method.offset, method.label);
+				dispatchTable.set(method.offset, method.label);
 			}
 		}
 
-		dispatchTables.add(dT);
-		// Generazione del codice assembly per la Dispatch Table
-		String codeMethod = "";
-		for (String label : dT) {
-			codeMethod = nlJoin(codeMethod,
-					"push " + label,  // Metto sullo stack la label
-					"lhp",  // Metto sullo stack il valore di hp
-					"sw",  // Scrivo la label all'indirizzo puntato da hp
-					"lhp",  // Carico il valore di hp
+		// add curr dispatch table to dispatch tables
+		dispatchTables.add(dispatchTable);
+
+		String dispTableCode = "";
+		for (String label : dispatchTable) {
+			dispTableCode = nlJoin(dispTableCode,
+					"push " + label,
+					"lhp",
+					"sw",
+					"lhp",
 					"push 1",
-					"add",  // Incremento hp
+					"add",
 					"shp");
 		}
-
-		return nlJoin(
-				"lhp",  // Metto hp sullo stack, ovvero il dispatch pointer da ritornare
-				codeMethod // Creo sullo heap la dispatch table
-		);
-
+		return nlJoin("lhp", dispTableCode );
 	}
 
 	@Override
 	public String visitNode(MethodNode n) {
 		if (print) printNode(n, n.id);
-
-		// Generazione codice per dichiarazioni locali e rimozione dallo stack
 		String declCode = null, popDecl = null, popParl = null;
 		for (Node dec : n.declarationList) {
 			declCode = nlJoin(declCode, visit(dec));
 			popDecl = nlJoin(popDecl, "pop");
 		}
 
-		// Rimozione parametri dallo stack
+		// remove parameters from stack
 		for (int i = 0; i < n.parameterList.size(); i++) {
 			popParl = nlJoin(popParl, "pop");
 		}
 
-		// Generazione di una nuova etichetta per l'indirizzo del metodo
 		String funl = freshFunLabel();
-		n.label = funl; // Salvataggio dell'etichetta nel nodo
+		n.label = funl;
 
-		// Inserimento del codice del metodo in FOOLlib
 		putCode(
 				nlJoin(
-						funl + ":", // Etichetta del metodo
-						"cfp", // Imposta $fp al valore di $sp
-						"lra", // Carica il valore di $ra
-						declCode, // Codice delle dichiarazioni locali
-						visit(n.exp), // Codice del corpo della funzione
-						"stm", // Salva il valore poppato (risultato della funzione)
-						popDecl, // Rimuove le dichiarazioni locali dallo stack
-						"sra", // Ripristina il valore di $ra
-						"pop", // Rimuove l'Access Link dallo stack
-						popParl, // Rimuove i parametri dallo stack
-						"sfp", // Ripristina il valore di $fp (Control Link)
-						"ltm", // Carica il valore di $tm (risultato della funzione)
-						"lra", // Carica il valore di $ra
-						"js" // Salta all'indirizzo memorizzato in $ra
+						funl + ":",
+						"cfp", // set $fp to $sp value
+						"lra",  // load $ra value
+						declCode, // generate code for local declarations (they use the new $fp!!!)
+						visit(n.exp), // generate code for function body expression
+						"stm", // set $tm to popped value (function result)
+						popDecl, // remove local declarations from stack
+						"sra", // set $ra to popped value
+						"pop", // remove Access Link from stack
+						popParl, // remove parameters from stack
+						"sfp", // set $fp to popped value (Control Link)
+						"ltm", // load $tm value (function result)
+						"lra", // load $ra value
+						"js"  // jump to to popped address
 				)
 		);
 

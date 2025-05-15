@@ -312,7 +312,7 @@ public class TypeCheckEASTVisitor extends BaseEASTVisitor<TypeNode,TypeException
 		for (int i = 0; i < n.argList.size(); i++) {
 			TypeNode fieldType = ((ClassTypeNode) n.entry.type).fields.get(i);
 			TypeNode passedField = visit(n.argList.get(i));
-			if (!isSubtype(fieldType, passedField)) {
+			if (!isSubtype(passedField, fieldType)) {
 				throw new TypeException("Wrong field type in class " + n.classId + " at line: ", n.getLine());
 			}
 		}
